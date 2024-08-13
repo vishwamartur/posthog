@@ -130,7 +130,8 @@
     }
 
     &.LemonButton--active,
-    &:hover:not([aria-disabled='true']),
+    &:not([aria-disabled='true']):hover,
+    &:not([aria-disabled='true']):focus-visible,
     &:not([aria-disabled='true']):active {
         --lemon-button-icon-opacity: 0.75;
     }
@@ -205,6 +206,7 @@
     }
 
     &.LemonButton--secondary.LemonButton--status-alt:hover,
+    &.LemonButton--secondary.LemonButton--status-alt:focus-visible,
     &.LemonButton--secondary.LemonButton--status-alt.LemonButton--active,
     &.LemonButton--secondary:not(.LemonButton--status-alt, .LemonButton--status-danger) {
         @include secondary-variables;
@@ -289,7 +291,8 @@
             }
         }
 
-        &:hover:not([aria-disabled='true']) {
+        &:not([aria-disabled='true']):hover,
+        &:not([aria-disabled='true']):focus-visible {
             --lemon-button-depth: var(--lemon-button-hover-depth);
         }
 
@@ -297,7 +300,8 @@
             --lemon-button-depth: var(--lemon-button-press-depth);
         }
 
-        &:hover:not([aria-disabled='true']),
+        &:not([aria-disabled='true']):hover,
+        &:not([aria-disabled='true']):focus-visible,
         &:not([aria-disabled='true']):active {
             .LemonButton__chrome {
                 transform: translateY(var(--lemon-button-depth));
@@ -323,30 +327,17 @@
 
     &.LemonButton--tertiary {
         &:not([aria-disabled='true']):hover,
+        &:not([aria-disabled='true']):focus-visible,
         &.LemonButton--active {
             background-color: var(--glass-border-3000);
         }
 
         &.LemonButton--status-danger {
             &:not([aria-disabled='true']):hover,
+            &:not([aria-disabled='true']):focus-visible,
             &.LemonButton--active {
                 background-color: var(--danger-highlight);
             }
-        }
-    }
-
-    .ant-tooltip & {
-        // Buttons have an overriden style in tooltips, as they are always dark
-        &:hover {
-            background: rgb(255 255 255 / 15%) !important;
-        }
-
-        &:active {
-            background: rgb(255 255 255 / 20%) !important;
-        }
-
-        .LemonButton__icon {
-            color: #fff !important;
         }
     }
 
@@ -424,7 +415,8 @@
             color: currentColor;
         }
 
-        &:not([aria-disabled='true']):hover {
+        &:not([aria-disabled='true']):hover,
+        &:not([aria-disabled='true']):focus-visible {
             background: rgb(0 0 0 / 10%);
         }
     }
