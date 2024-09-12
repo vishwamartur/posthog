@@ -5520,6 +5520,25 @@
             "enum": ["green", "red", "blue", "purple", "dark", "light", "sepia", "invert", "invert-hue", "greyscale"],
             "type": "string"
         },
+        "HogCompileResponse": {
+            "additionalProperties": false,
+            "properties": {
+                "bytecode": {
+                    "items": {},
+                    "type": "array"
+                },
+                "locals": {
+                    "items": {},
+                    "type": "array"
+                },
+                "upvalues": {
+                    "items": {},
+                    "type": "array"
+                }
+            },
+            "required": ["bytecode", "locals", "upvalues"],
+            "type": "object"
+        },
         "HogLanguage": {
             "enum": ["hog", "hogJson", "hogQL", "hogQLExpr", "hogTemplate"],
             "type": "string"

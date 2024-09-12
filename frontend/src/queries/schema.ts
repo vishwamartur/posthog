@@ -1923,3 +1923,9 @@ export interface AlertType extends AlertTypeBase {
     last_notified_at: string
     checks: AlertCheck[]
 }
+
+export interface HogCompileResponse {
+    bytecode: any[]
+    locals: any[]
+    upvalues: any[]
+}
