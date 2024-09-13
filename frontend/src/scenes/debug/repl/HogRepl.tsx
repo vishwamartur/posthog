@@ -9,20 +9,10 @@ export function HogRepl(): JSX.Element {
     const { runCode } = useActions(hogReplLogic)
     const [currentCode, setCurrentCode] = useState('')
 
-    const handleKeyDown = (e): void => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault()
-            if (currentCode.trim() !== '') {
-                runCode(currentCode)
-                setCurrentCode('')
-            }
-        }
-    }
-
     return (
         <div className="p-4 bg-white text-black font-mono">
             <div className="space-y-4">
-                {replChunks.map(({ code, result, error, status }, index) => (
+                {replChunks.map(({ code, result, print, error, status }, index) => (
                     <div key={index} className="pb-2 border-b border-gray-300">
                         <div className="flex items-start">
                             <span
@@ -53,6 +43,12 @@ export function HogRepl(): JSX.Element {
                                 </svg>
                             </div>
                         )}
+                        {print ? (
+                            <div className="flex items-start mt-2">
+                                <span>&nbsp;</span>
+                                <div className="flex-1 whitespace-pre-wrap ml-2">{print}</div>
+                            </div>
+                        ) : null}
                         {status === 'success' && (
                             <div className="flex items-start mt-2">
                                 <span
@@ -83,8 +79,16 @@ export function HogRepl(): JSX.Element {
                         className="flex-1 bg-transparent focus:outline-none resize-none ml-2 p-0"
                         value={currentCode}
                         onChange={(e) => setCurrentCode(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        rows={1}
+                        onKeyDown={(e): void => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault()
+                                if (currentCode.trim() !== '') {
+                                    runCode(currentCode)
+                                    setCurrentCode('')
+                                }
+                            }
+                        }}
+                        rows={2}
                         autoFocus
                     />
                 </div>

@@ -7,6 +7,7 @@ import type { hogReplLogicType } from './hogReplLogicType'
 export interface ReplChunk {
     code: string
     result?: string
+    print?: string
     error?: string
     bytecode?: any[]
     locals?: any[]
@@ -18,6 +19,7 @@ export const hogReplLogic = kea<hogReplLogicType>([
     actions({
         runCode: (code: string) => ({ code }),
         setResult: (index: number, result?: string, error?: string) => ({ index, result, error }),
+        print: (index: number, line?: string) => ({ index, line }),
         setBytecode: (index: number, bytecode: any[], locals: any[]) => ({ index, bytecode, locals }),
     }),
     reducers({
@@ -25,31 +27,16 @@ export const hogReplLogic = kea<hogReplLogicType>([
             [] as ReplChunk[],
             {
                 runCode: (state, { code }) => [...state, { code, status: 'pending' } as ReplChunk],
-                setResult: (state, { index, result, error }) => {
-                    const replChunks = [...state]
-                    const chunk = replChunks[index]
-                    if (chunk) {
-                        replChunks[index] = {
-                            ...chunk,
-                            result,
-                            error,
-                            status: error ? 'error' : 'success',
-                        }
-                    }
-                    return replChunks
-                },
-                setBytecode: (state, { index, bytecode, locals }) => {
-                    const replChunks = [...state]
-                    const chunk = replChunks[index]
-                    if (chunk) {
-                        replChunks[index] = {
-                            ...chunk,
-                            bytecode,
-                            locals,
-                        }
-                    }
-                    return replChunks
-                },
+                setResult: (state, { index, result, error }) =>
+                    state.map((chunk, i) =>
+                        i === index ? { ...chunk, result, error, status: error ? 'error' : 'success' } : chunk
+                    ),
+                setBytecode: (state, { index, bytecode, locals }) =>
+                    state.map((chunk, i) => (i === index ? { ...chunk, bytecode, locals } : chunk)),
+                print: (state, { index, line }) =>
+                    state.map((chunk, i) =>
+                        i === index ? { ...chunk, print: (chunk.print ? chunk.print + '\n' : '') + line } : chunk
+                    ),
             },
         ],
     }),
@@ -68,7 +55,13 @@ export const hogReplLogic = kea<hogReplLogicType>([
                 if (bytecode[bytecode.length - 1] === 35) {
                     bytecode[bytecode.length - 1] = 38
                 }
-                const result = execHog(bytecode)
+                const result = execHog(bytecode, {
+                    functions: {
+                        print: (value: any) => {
+                            actions.print(index, String(value))
+                        },
+                    },
+                })
                 // Set the result
                 actions.setResult(index, String(result.result))
             } catch (error: any) {
