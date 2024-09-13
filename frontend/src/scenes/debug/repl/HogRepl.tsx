@@ -45,7 +45,12 @@ export function HogRepl(): JSX.Element {
                         )}
                         {print ? (
                             <div className="flex items-start mt-2">
-                                <span>&nbsp;</span>
+                                <span
+                                    // eslint-disable-next-line react/forbid-dom-props
+                                    style={{ color: 'green' }}
+                                >
+                                    #
+                                </span>
                                 <div className="flex-1 whitespace-pre-wrap ml-2">{print}</div>
                             </div>
                         ) : null}
