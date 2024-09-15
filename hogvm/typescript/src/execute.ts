@@ -180,7 +180,7 @@ export function exec(code: any[] | VMState, options?: ExecOptions): ExecResult {
     function getFinishedState(): VMState {
         return {
             bytecode: [],
-            stack: [],
+            stack: stack.map(convertHogToJS),
             upvalues: [],
             callStack: [],
             throwStack: [],
@@ -834,13 +834,5 @@ export function exec(code: any[] | VMState, options?: ExecOptions): ExecResult {
         frame.ip++
     }
 
-    if (stack.length > 1) {
-        throw new HogVMException('Invalid bytecode. More than one value left on stack')
-    }
-
-    if (stack.length === 0) {
-        return { result: null, finished: true, state: getFinishedState() } satisfies ExecResult
-    }
-
-    return { result: popStack() ?? null, finished: true, state: getFinishedState() } satisfies ExecResult
+    return { result: null, finished: true, state: getFinishedState() } satisfies ExecResult
 }
