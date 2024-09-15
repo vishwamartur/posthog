@@ -1,5 +1,5 @@
 import { newHogCallable, newHogClosure, printHogStringOutput, VMState } from '@posthog/hogvm'
-import { actions, kea, listeners, path, reducers } from 'kea'
+import { actions, kea, listeners, path, reducers, selectors } from 'kea'
 import api from 'lib/api'
 import { execHogAsync } from 'lib/hog'
 
@@ -29,12 +29,15 @@ export const hogReplLogic = kea<hogReplLogicType>([
         setVMState: (index: number, state: any) => ({ index, state }),
         setCurrentCode: (code: string) => ({ code }),
         runCurrentCode: true,
+        editFromHere: (index: number) => ({ index }),
+        setReplChunks: (replChunks: ReplChunk[]) => ({ replChunks }),
     }),
     reducers({
         currentCode: ['', { setCurrentCode: (_, { code }) => code }],
         replChunks: [
             [] as ReplChunk[],
             {
+                setReplChunks: (_, { replChunks }) => replChunks,
                 runCode: (state, { code }) => [...state, { code, status: 'pending' } as ReplChunk],
                 setResult: (state, { index, result, error }) =>
                     state.map((chunk, i) =>
@@ -51,7 +54,46 @@ export const hogReplLogic = kea<hogReplLogicType>([
             },
         ],
     }),
+    selectors({
+        lastLocals: [
+            (s) => [s.replChunks],
+            (replChunks): ReplChunk['locals'] | undefined => {
+                for (let i = replChunks.length - 1; i >= 0; i--) {
+                    if (replChunks[i].locals) {
+                        return replChunks[i].locals
+                    }
+                }
+                return undefined
+            },
+        ],
+        lastState: [
+            (s) => [s.replChunks],
+            (replChunks): VMState | undefined => {
+                for (let i = replChunks.length - 1; i >= 0; i--) {
+                    if (replChunks[i].state) {
+                        return replChunks[i].state
+                    }
+                }
+                return undefined
+            },
+        ],
+        lastLocalGlobals: [
+            (s) => [s.lastLocals],
+            (lastLocals): Record<string, any> | undefined => {
+                if (lastLocals) {
+                    return lastLocals.reduce((acc, local) => ({ ...acc, [local[0]]: 'local' }), {})
+                }
+                return undefined
+            },
+        ],
+    }),
     listeners(({ actions, values }) => ({
+        editFromHere: ({ index }) => {
+            actions.setCurrentCode(
+                [...values.replChunks.slice(index).map((chunk) => chunk.code), values.currentCode].join('\n')
+            )
+            actions.setReplChunks(values.replChunks.slice(0, index))
+        },
         runCode: async ({ code }) => {
             const options = {
                 asyncFunctions: {
@@ -95,7 +137,7 @@ export const hogReplLogic = kea<hogReplLogicType>([
                     run: async (queryString: string) => {
                         const hogQLQuery: HogQLQuery = { kind: NodeKind.HogQLQuery, query: queryString }
                         const response = await performQuery(hogQLQuery)
-                        return response
+                        return { results: response.results, columns: response.columns }
                     },
                 },
                 functions: {
@@ -105,20 +147,8 @@ export const hogReplLogic = kea<hogReplLogicType>([
                 },
             }
             const index = values.replChunks.length - 1
-            // find last chunk that has locals
-            let lastLocals: ReplChunk['locals']
-            let lastState: ReplChunk['state']
-            for (let i = index; i >= 0; i--) {
-                if (!lastLocals && values.replChunks[i].locals) {
-                    lastLocals = values.replChunks[i].locals
-                }
-                if (!lastState && values.replChunks[i].state) {
-                    lastState = values.replChunks[i].state
-                }
-                if (lastState && lastLocals) {
-                    break
-                }
-            }
+            const { lastLocals, lastState } = values
+
             try {
                 const res = await api.hog.create(code, lastLocals)
                 const [_h, version, ...bytecode] = res.bytecode

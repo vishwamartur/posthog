@@ -1,34 +1,23 @@
-import { LemonButton, Popover } from '@posthog/lemon-ui'
+import { LemonButton } from '@posthog/lemon-ui'
 import { useActions, useValues } from 'kea'
 import { CodeEditorInline } from 'lib/monaco/CodeEditorInline'
-import { useState } from 'react'
 import { SceneExport } from 'scenes/sceneTypes'
 
 import { hogReplLogic, ReplChunk } from './hogReplLogic'
 
 interface ReplChunkProps {
     chunk: ReplChunk
+    editFromHere: () => void
 }
 export function ReplChunk({
-    chunk: { code, result, print, error, status, locals, bytecode, state },
+    chunk: { code, result, print, error, status },
+    editFromHere,
 }: ReplChunkProps): JSX.Element {
-    const [isOpen, setIsOpen] = useState(false)
     return (
         <div className="pb-2 border-b border-gray-300">
-            {bytecode || state || locals ? (
-                <Popover
-                    visible={isOpen}
-                    onClickOutside={() => setIsOpen(false)}
-                    overlay={
-                        // eslint-disable-next-line react/forbid-dom-props
-                        <pre style={{ minWidth: 300 }}>{JSON.stringify({ locals, bytecode, state }, null, 2)}</pre>
-                    }
-                >
-                    <LemonButton size="xsmall" className="float-right" onClick={() => setIsOpen(!isOpen)}>
-                        🪲
-                    </LemonButton>
-                </Popover>
-            ) : null}
+            <LemonButton size="small" type="secondary" className="float-right" onClick={editFromHere}>
+                📝
+            </LemonButton>
             <div className="flex items-start">
                 <span
                     // eslint-disable-next-line react/forbid-dom-props
@@ -84,14 +73,14 @@ export function ReplChunk({
 }
 
 export function HogRepl(): JSX.Element {
-    const { replChunks, currentCode } = useValues(hogReplLogic)
-    const { runCurrentCode, setCurrentCode } = useActions(hogReplLogic)
+    const { replChunks, currentCode, lastLocalGlobals } = useValues(hogReplLogic)
+    const { runCurrentCode, setCurrentCode, editFromHere } = useActions(hogReplLogic)
 
     return (
         <div className="p-4 bg-white text-black font-mono">
             <div className="space-y-4">
                 {replChunks.map((chunk, index) => (
-                    <ReplChunk chunk={chunk} key={index} />
+                    <ReplChunk chunk={chunk} key={index} editFromHere={() => editFromHere(index)} />
                 ))}
                 <div className="flex items-start">
                     <span
@@ -113,6 +102,7 @@ export function HogRepl(): JSX.Element {
                             onChange={(value) => setCurrentCode(value ?? '')}
                             onPressCmdEnter={runCurrentCode}
                             options={{ fontSize: 14, padding: { top: 0, bottom: 0 } }}
+                            globals={lastLocalGlobals}
                         />
                     </div>
                     <LemonButton size="small" type="primary" onClick={runCurrentCode}>
