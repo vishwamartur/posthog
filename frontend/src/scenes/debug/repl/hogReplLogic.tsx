@@ -1,7 +1,7 @@
-import { newHogCallable, newHogClosure, VMState } from '@posthog/hogvm'
+import { newHogCallable, newHogClosure, printHogStringOutput, VMState } from '@posthog/hogvm'
 import { actions, kea, listeners, path, reducers } from 'kea'
 import api from 'lib/api'
-import { execHog } from 'lib/hog'
+import { execHogAsync } from 'lib/hog'
 
 import type { hogReplLogicType } from './hogReplLogicType'
 
@@ -48,9 +48,48 @@ export const hogReplLogic = kea<hogReplLogicType>([
     listeners(({ actions, values }) => ({
         runCode: async ({ code }) => {
             const options = {
+                asyncFunctions: {
+                    sleep: async (ms: number) => {
+                        await new Promise((resolve) => setTimeout(resolve, ms))
+                    },
+                    fetch: async ([url, fetchOptions]: [string | undefined, Record<string, any> | undefined]) => {
+                        if (typeof url !== 'string') {
+                            throw new Error('fetch: Invalid URL')
+                        }
+
+                        const method = fetchOptions?.method || 'POST'
+                        const headers = fetchOptions?.headers || {
+                            'Content-Type': 'application/json',
+                        }
+                        // Modify the body to ensure it is a string (we allow Hog to send an object to keep things simple)
+                        const body: string | undefined = fetchOptions?.body
+                            ? typeof fetchOptions.body === 'string'
+                                ? fetchOptions.body
+                                : JSON.stringify(fetchOptions.body)
+                            : fetchOptions?.body
+
+                        const result = await fetch(url, {
+                            method,
+                            headers,
+                            body,
+                        })
+                        const response = {
+                            status: result.status,
+                            body: await result.text(),
+                        }
+                        if (result.headers.get('content-type')?.includes('application/json')) {
+                            try {
+                                response.body = JSON.parse(response.body)
+                            } catch (e) {
+                                console.error('Failed to parse JSON response', e)
+                            }
+                        }
+                        return response
+                    },
+                },
                 functions: {
                     print: (value: any) => {
-                        actions.print(index, String(value))
+                        actions.print(index, printHogStringOutput(value))
                     },
                 },
             }
@@ -117,14 +156,14 @@ export const hogReplLogic = kea<hogReplLogicType>([
                     maxMemUsed: lastState?.maxMemUsed ?? 0,
                     syncDuration: lastState?.syncDuration ?? 0,
                 }
-                const result = execHog(state, options)
+                const result = await execHogAsync(state, options)
 
                 // Set the result
                 const response =
                     (result.state?.stack?.length ?? 0) > 0
                         ? result.state?.stack?.[result.state.stack.length - 1]
                         : 'null'
-                actions.setResult(index, String(response))
+                actions.setResult(index, printHogStringOutput(response))
                 actions.setVMState(index, result.state)
             } catch (error: any) {
                 // Handle errors
