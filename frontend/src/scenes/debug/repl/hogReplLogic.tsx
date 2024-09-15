@@ -3,6 +3,9 @@ import { actions, kea, listeners, path, reducers } from 'kea'
 import api from 'lib/api'
 import { execHogAsync } from 'lib/hog'
 
+import { performQuery } from '~/queries/query'
+import { HogQLQuery, NodeKind } from '~/queries/schema'
+
 import type { hogReplLogicType } from './hogReplLogicType'
 
 export interface ReplChunk {
@@ -24,8 +27,11 @@ export const hogReplLogic = kea<hogReplLogicType>([
         print: (index: number, line?: string) => ({ index, line }),
         setBytecode: (index: number, bytecode: any[], locals: any[]) => ({ index, bytecode, locals }),
         setVMState: (index: number, state: any) => ({ index, state }),
+        setCurrentCode: (code: string) => ({ code }),
+        runCurrentCode: true,
     }),
     reducers({
+        currentCode: ['', { setCurrentCode: (_, { code }) => code }],
         replChunks: [
             [] as ReplChunk[],
             {
@@ -84,6 +90,11 @@ export const hogReplLogic = kea<hogReplLogicType>([
                                 console.error('Failed to parse JSON response', e)
                             }
                         }
+                        return response
+                    },
+                    run: async (queryString: string) => {
+                        const hogQLQuery: HogQLQuery = { kind: NodeKind.HogQLQuery, query: queryString }
+                        const response = await performQuery(hogQLQuery)
                         return response
                     },
                 },
@@ -170,6 +181,10 @@ export const hogReplLogic = kea<hogReplLogicType>([
                 console.error(error)
                 actions.setResult(index, undefined, error.toString())
             }
+        },
+        runCurrentCode: () => {
+            actions.runCode(values.currentCode)
+            actions.setCurrentCode('')
         },
     })),
 ])

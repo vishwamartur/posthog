@@ -1,5 +1,6 @@
 import { LemonButton, Popover } from '@posthog/lemon-ui'
 import { useActions, useValues } from 'kea'
+import { CodeEditorInline } from 'lib/monaco/CodeEditorInline'
 import { useState } from 'react'
 import { SceneExport } from 'scenes/sceneTypes'
 
@@ -18,10 +19,13 @@ export function ReplChunk({
                 <Popover
                     visible={isOpen}
                     onClickOutside={() => setIsOpen(false)}
-                    overlay={<pre>{JSON.stringify({ locals, bytecode, state }, null, 2)}</pre>}
+                    overlay={
+                        // eslint-disable-next-line react/forbid-dom-props
+                        <pre style={{ minWidth: 300 }}>{JSON.stringify({ locals, bytecode, state }, null, 2)}</pre>
+                    }
                 >
                     <LemonButton size="xsmall" className="float-right" onClick={() => setIsOpen(!isOpen)}>
-                        debug
+                        🪲
                     </LemonButton>
                 </Popover>
             ) : null}
@@ -80,9 +84,8 @@ export function ReplChunk({
 }
 
 export function HogRepl(): JSX.Element {
-    const { replChunks } = useValues(hogReplLogic)
-    const { runCode } = useActions(hogReplLogic)
-    const [currentCode, setCurrentCode] = useState('')
+    const { replChunks, currentCode } = useValues(hogReplLogic)
+    const { runCurrentCode, setCurrentCode } = useActions(hogReplLogic)
 
     return (
         <div className="p-4 bg-white text-black font-mono">
@@ -97,22 +100,24 @@ export function HogRepl(): JSX.Element {
                     >
                         {'>'}
                     </span>
-                    <textarea
-                        className="flex-1 bg-transparent focus:outline-none resize-none ml-2 p-0"
-                        value={currentCode}
-                        onChange={(e) => setCurrentCode(e.target.value)}
-                        onKeyDown={(e): void => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault()
-                                if (currentCode.trim() !== '') {
-                                    runCode(currentCode)
-                                    setCurrentCode('')
-                                }
-                            }
-                        }}
-                        rows={2}
-                        autoFocus
-                    />
+                    <div
+                        className="w-full"
+                        // eslint-disable-next-line react/forbid-dom-props
+                        style={{ marginLeft: -10, marginTop: -7, marginRight: -5, marginBottom: -5 }}
+                    >
+                        <CodeEditorInline
+                            language="hog"
+                            embedded
+                            className="flex-1 bg-transparent focus:outline-none resize-none ml-2 p-0"
+                            value={currentCode}
+                            onChange={(value) => setCurrentCode(value ?? '')}
+                            onPressCmdEnter={runCurrentCode}
+                            options={{ fontSize: 14, padding: { top: 0, bottom: 0 } }}
+                        />
+                    </div>
+                    <LemonButton size="small" type="primary" onClick={runCurrentCode}>
+                        ⌘⏎
+                    </LemonButton>
                 </div>
             </div>
         </div>
