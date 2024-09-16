@@ -18,7 +18,10 @@ class HogViewSet(TeamAndOrgViewSetMixin, PydanticModelMixin, viewsets.ViewSet):
         local_locals = [Local(name=local[0], depth=local[1], is_captured=local[2]) for local in locals]
         program = parse_program(hog)
         compiled = create_bytecode(
-            program, supported_functions={"fetch", "postHogCapture"}, keep_last_scope_open=True, locals=local_locals
+            program,
+            supported_functions={"fetch", "postHogCapture", "run"},
+            keep_last_scope_open=True,
+            locals=local_locals,
         )
         return Response(
             HogCompileResponse(
