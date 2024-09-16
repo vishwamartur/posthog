@@ -3,10 +3,10 @@ import { useActions, useValues } from 'kea'
 import { CodeEditorInline } from 'lib/monaco/CodeEditorInline'
 import { SceneExport } from 'scenes/sceneTypes'
 
-import { hogReplLogic, ReplChunk } from './hogReplLogic'
+import { hogReplLogic, ReplChunk as ReplChunkType } from './hogReplLogic'
 
 interface ReplChunkProps {
-    chunk: ReplChunk
+    chunk: ReplChunkType
     editFromHere: () => void
 }
 export function ReplChunk({
