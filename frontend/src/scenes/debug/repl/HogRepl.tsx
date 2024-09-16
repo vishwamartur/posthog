@@ -103,6 +103,7 @@ export function HogRepl(): JSX.Element {
                             onPressCmdEnter={runCurrentCode}
                             options={{ fontSize: 14, padding: { top: 0, bottom: 0 } }}
                             globals={lastLocalGlobals}
+                            autoFocus
                         />
                     </div>
                     <LemonButton size="small" type="primary" onClick={runCurrentCode}>
