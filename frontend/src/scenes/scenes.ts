@@ -351,6 +351,7 @@ export const sceneConfigurations: Record<Scene, SceneConfig> = {
     },
     [Scene.DebugRepl]: {
         projectBased: true,
+        name: 'Repl',
     },
     [Scene.VerifyEmail]: {
         allowUnauthenticated: true,
