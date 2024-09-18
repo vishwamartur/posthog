@@ -20,6 +20,13 @@ class MathGroupTypeIndex(float, Enum):
     NUMBER_4 = 4
 
 
+class ActionConversionGoal(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    actionId: int
+
+
 class AggregationAxisFormat(StrEnum):
     NUMERIC = "numeric"
     DURATION = "duration"
@@ -254,12 +261,18 @@ class CompareFilter(BaseModel):
     compare_to: Optional[str] = None
 
 
+class ColorMode(StrEnum):
+    LIGHT = "light"
+    DARK = "dark"
+
+
 class ConditionalFormattingRule(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
     bytecode: list
     color: str
+    colorMode: Optional[ColorMode] = None
     columnName: str
     id: str
     input: str
@@ -274,6 +287,13 @@ class CountPerActorMathType(StrEnum):
     P90_COUNT_PER_ACTOR = "p90_count_per_actor"
     P95_COUNT_PER_ACTOR = "p95_count_per_actor"
     P99_COUNT_PER_ACTOR = "p99_count_per_actor"
+
+
+class CustomEventConversionGoal(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    customEventName: str
 
 
 class DataWarehouseEventsModifier(BaseModel):
@@ -1446,13 +1466,6 @@ class VizSpecificOptions(BaseModel):
     )
     ActionsPie: Optional[ActionsPie] = None
     RETENTION: Optional[RETENTION] = None
-
-
-class WebAnalyticsConversionGoal(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    actionId: int
 
 
 class Sampling(BaseModel):
@@ -3747,7 +3760,7 @@ class WebExternalClicksTableQuery(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    conversionGoal: Optional[WebAnalyticsConversionGoal] = None
+    conversionGoal: Optional[Union[ActionConversionGoal, CustomEventConversionGoal]] = None
     dateRange: Optional[DateRange] = None
     filterTestAccounts: Optional[bool] = None
     kind: Literal["WebExternalClicksTableQuery"] = "WebExternalClicksTableQuery"
@@ -3766,7 +3779,7 @@ class WebGoalsQuery(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    conversionGoal: Optional[WebAnalyticsConversionGoal] = None
+    conversionGoal: Optional[Union[ActionConversionGoal, CustomEventConversionGoal]] = None
     dateRange: Optional[DateRange] = None
     filterTestAccounts: Optional[bool] = None
     kind: Literal["WebGoalsQuery"] = "WebGoalsQuery"
@@ -3785,7 +3798,7 @@ class WebOverviewQuery(BaseModel):
         extra="forbid",
     )
     compare: Optional[bool] = None
-    conversionGoal: Optional[WebAnalyticsConversionGoal] = None
+    conversionGoal: Optional[Union[ActionConversionGoal, CustomEventConversionGoal]] = None
     dateRange: Optional[DateRange] = None
     filterTestAccounts: Optional[bool] = None
     kind: Literal["WebOverviewQuery"] = "WebOverviewQuery"
@@ -3803,7 +3816,7 @@ class WebStatsTableQuery(BaseModel):
         extra="forbid",
     )
     breakdownBy: WebStatsBreakdown
-    conversionGoal: Optional[WebAnalyticsConversionGoal] = None
+    conversionGoal: Optional[Union[ActionConversionGoal, CustomEventConversionGoal]] = None
     dateRange: Optional[DateRange] = None
     doPathCleaning: Optional[bool] = None
     filterTestAccounts: Optional[bool] = None
@@ -3824,7 +3837,7 @@ class WebTopClicksQuery(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    conversionGoal: Optional[WebAnalyticsConversionGoal] = None
+    conversionGoal: Optional[Union[ActionConversionGoal, CustomEventConversionGoal]] = None
     dateRange: Optional[DateRange] = None
     filterTestAccounts: Optional[bool] = None
     kind: Literal["WebTopClicksQuery"] = "WebTopClicksQuery"
@@ -4238,69 +4251,6 @@ class EventsNode(BaseModel):
         ]
     ] = Field(default=None, description="Properties configurable in the interface")
     response: Optional[dict[str, Any]] = None
-
-
-class EventsQuery(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    actionId: Optional[int] = Field(default=None, description="Show events matching a given action")
-    after: Optional[str] = Field(default=None, description="Only fetch events that happened after this timestamp")
-    before: Optional[str] = Field(default=None, description="Only fetch events that happened before this timestamp")
-    event: Optional[str] = Field(default=None, description="Limit to events matching this string")
-    filterTestAccounts: Optional[bool] = Field(default=None, description="Filter test accounts")
-    fixedProperties: Optional[
-        list[
-            Union[
-                EventPropertyFilter,
-                PersonPropertyFilter,
-                ElementPropertyFilter,
-                SessionPropertyFilter,
-                CohortPropertyFilter,
-                RecordingPropertyFilter,
-                LogEntryPropertyFilter,
-                GroupPropertyFilter,
-                FeaturePropertyFilter,
-                HogQLPropertyFilter,
-                EmptyPropertyFilter,
-                DataWarehousePropertyFilter,
-                DataWarehousePersonPropertyFilter,
-            ]
-        ]
-    ] = Field(
-        default=None,
-        description="Fixed properties in the query, can't be edited in the interface (e.g. scoping down by person)",
-    )
-    kind: Literal["EventsQuery"] = "EventsQuery"
-    limit: Optional[int] = Field(default=None, description="Number of rows to return")
-    modifiers: Optional[HogQLQueryModifiers] = Field(
-        default=None, description="Modifiers used when performing the query"
-    )
-    offset: Optional[int] = Field(default=None, description="Number of rows to skip before returning rows")
-    orderBy: Optional[list[str]] = Field(default=None, description="Columns to order by")
-    personId: Optional[str] = Field(default=None, description="Show events for a given person")
-    properties: Optional[
-        list[
-            Union[
-                EventPropertyFilter,
-                PersonPropertyFilter,
-                ElementPropertyFilter,
-                SessionPropertyFilter,
-                CohortPropertyFilter,
-                RecordingPropertyFilter,
-                LogEntryPropertyFilter,
-                GroupPropertyFilter,
-                FeaturePropertyFilter,
-                HogQLPropertyFilter,
-                EmptyPropertyFilter,
-                DataWarehousePropertyFilter,
-                DataWarehousePersonPropertyFilter,
-            ]
-        ]
-    ] = Field(default=None, description="Properties configurable in the interface")
-    response: Optional[EventsQueryResponse] = None
-    select: list[str] = Field(..., description="Return a limited set of data. Required.")
-    where: Optional[list[str]] = Field(default=None, description="HogQL filters to apply on returned data")
 
 
 class FunnelExclusionActionsNode(BaseModel):
@@ -4850,10 +4800,6 @@ class FunnelsFilter(BaseModel):
     useUdf: Optional[bool] = None
 
 
-class HasPropertiesNode(RootModel[Union[EventsNode, EventsQuery, PersonsNode]]):
-    root: Union[EventsNode, EventsQuery, PersonsNode]
-
-
 class InsightFilter(
     RootModel[Union[TrendsFilter, FunnelsFilter, RetentionFilter, PathsFilter, StickinessFilter, LifecycleFilter]]
 ):
@@ -5086,6 +5032,73 @@ class ErrorTrackingQuery(BaseModel):
     select: Optional[list[str]] = None
 
 
+class EventsQuery(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    actionId: Optional[int] = Field(default=None, description="Show events matching a given action")
+    after: Optional[str] = Field(default=None, description="Only fetch events that happened after this timestamp")
+    before: Optional[str] = Field(default=None, description="Only fetch events that happened before this timestamp")
+    event: Optional[str] = Field(default=None, description="Limit to events matching this string")
+    filterTestAccounts: Optional[bool] = Field(default=None, description="Filter test accounts")
+    fixedProperties: Optional[
+        list[
+            Union[
+                PropertyGroupFilter,
+                PropertyGroupFilterValue,
+                Union[
+                    EventPropertyFilter,
+                    PersonPropertyFilter,
+                    ElementPropertyFilter,
+                    SessionPropertyFilter,
+                    CohortPropertyFilter,
+                    RecordingPropertyFilter,
+                    LogEntryPropertyFilter,
+                    GroupPropertyFilter,
+                    FeaturePropertyFilter,
+                    HogQLPropertyFilter,
+                    EmptyPropertyFilter,
+                    DataWarehousePropertyFilter,
+                    DataWarehousePersonPropertyFilter,
+                ],
+            ]
+        ]
+    ] = Field(
+        default=None,
+        description="Fixed properties in the query, can't be edited in the interface (e.g. scoping down by person)",
+    )
+    kind: Literal["EventsQuery"] = "EventsQuery"
+    limit: Optional[int] = Field(default=None, description="Number of rows to return")
+    modifiers: Optional[HogQLQueryModifiers] = Field(
+        default=None, description="Modifiers used when performing the query"
+    )
+    offset: Optional[int] = Field(default=None, description="Number of rows to skip before returning rows")
+    orderBy: Optional[list[str]] = Field(default=None, description="Columns to order by")
+    personId: Optional[str] = Field(default=None, description="Show events for a given person")
+    properties: Optional[
+        list[
+            Union[
+                EventPropertyFilter,
+                PersonPropertyFilter,
+                ElementPropertyFilter,
+                SessionPropertyFilter,
+                CohortPropertyFilter,
+                RecordingPropertyFilter,
+                LogEntryPropertyFilter,
+                GroupPropertyFilter,
+                FeaturePropertyFilter,
+                HogQLPropertyFilter,
+                EmptyPropertyFilter,
+                DataWarehousePropertyFilter,
+                DataWarehousePersonPropertyFilter,
+            ]
+        ]
+    ] = Field(default=None, description="Properties configurable in the interface")
+    response: Optional[EventsQueryResponse] = None
+    select: list[str] = Field(..., description="Return a limited set of data. Required.")
+    where: Optional[list[str]] = Field(default=None, description="HogQL filters to apply on returned data")
+
+
 class ExperimentTrendQuery(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -5147,6 +5160,10 @@ class FunnelsQuery(BaseModel):
     series: list[Union[EventsNode, ActionsNode, DataWarehouseNode]] = Field(
         ..., description="Events and actions to include"
     )
+
+
+class HasPropertiesNode(RootModel[Union[EventsNode, EventsQuery, PersonsNode]]):
+    root: Union[EventsNode, EventsQuery, PersonsNode]
 
 
 class InsightsQueryBaseFunnelsQueryResponse(BaseModel):
