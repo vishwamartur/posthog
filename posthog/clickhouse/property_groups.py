@@ -91,12 +91,11 @@ class PropertyGroupManager:
             yield f"ALTER TABLE {table} ON CLUSTER {self.__cluster} ADD INDEX IF NOT EXISTS {index_definition}"
 
     def get_materialize_statements(
-        self, table: TableName, partitions: Iterable[str] | None = None, on_cluster: bool = True
+        self, table: TableName, partitions: Iterable[str] | None = None, on_cluster: bool | None = None
     ) -> Iterable[str]:
         def get_statements_without_in_partition_clause():
-            # TODO: make cluster support less messy
             prefix = f"ALTER TABLE {table}"
-            if on_cluster:
+            if on_cluster is not False:  # TODO: make cluster support less messy
                 prefix = f"{prefix} ON CLUSTER {self.__cluster}"
 
             for column, property_groups in self.__groups[table].items():
