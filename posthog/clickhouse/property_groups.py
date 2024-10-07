@@ -80,6 +80,30 @@ class PropertyGroupManager:
         for index_definition in self.__get_index_definitions(table, column, group_name):
             yield f"ALTER TABLE {table} ON CLUSTER {self.__cluster} ADD INDEX IF NOT EXISTS {index_definition}"
 
+    def get_materialize_statements(
+        self, table: TableName, partitions: Iterable[str] | None = None, on_cluster: bool = True
+    ) -> Iterable[str]:
+        def get_statements_without_in_partition_clause():
+            # TODO: make cluster support less messy
+            prefix = f"ALTER TABLE {table}"
+            if on_cluster:
+                prefix = f"{prefix} ON CLUSTER {self.__cluster}"
+
+            for column, property_groups in self.__groups[table].items():
+                for group_name in property_groups.keys():
+                    column_name = self.__get_map_column_name(column, group_name)
+                    yield f"{prefix} MATERIALIZE COLUMN {column_name}"
+                    # TODO: refactor index to reduce duplication with __get_index_definitions
+                    yield f"{prefix} MATERIALIZE INDEX {column_name}_keys_bf"
+                    yield f"{prefix} MATERIALIZE INDEX {column_name}_values_bf"
+
+        if partitions is None:
+            yield from get_statements_without_in_partition_clause()
+        else:
+            statements = [*get_statements_without_in_partition_clause()]
+            for partition in partitions:
+                yield from (f"{statement} IN PARTITION '{partition}'" for statement in statements)
+
 
 ignore_custom_properties = [
     # `token` & `distinct_id` properties are sent with ~50% of events and by
