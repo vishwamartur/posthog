@@ -21,6 +21,16 @@ ColumnName = str
 PropertyGroupName = str
 
 
+@dataclass
+class IndexDefinition:
+    name: str
+    expression: str
+    type: str
+
+    def __str__(self) -> str:
+        return f"{self.name} {self.expression} TYPE {self.type}"
+
+
 class PropertyGroupManager:
     def __init__(
         self,
@@ -57,14 +67,14 @@ class PropertyGroupManager:
 
     def __get_index_definitions(
         self, table: TableName, column: ColumnName, group_name: PropertyGroupName
-    ) -> Iterable[str]:
+    ) -> Iterable[IndexDefinition]:
         group_definition = self.__groups[table][column][group_name]
         if not group_definition.is_materialized:
             return
 
         map_column_name = self.__get_map_column_name(column, group_name)
-        yield f"{map_column_name}_keys_bf mapKeys({map_column_name}) TYPE bloom_filter"
-        yield f"{map_column_name}_values_bf mapValues({map_column_name}) TYPE bloom_filter"
+        yield IndexDefinition(f"{map_column_name}_keys_bf", f"mapKeys({map_column_name})", "bloom_filter")
+        yield IndexDefinition(f"{map_column_name}_values_bf", f"mapValues({map_column_name})", "bloom_filter")
 
     def get_create_table_pieces(self, table: TableName) -> Iterable[str]:
         for column, groups in self.__groups[table].items():
@@ -93,9 +103,8 @@ class PropertyGroupManager:
                 for group_name in property_groups.keys():
                     column_name = self.__get_map_column_name(column, group_name)
                     yield f"{prefix} MATERIALIZE COLUMN {column_name}"
-                    # TODO: refactor index to reduce duplication with __get_index_definitions
-                    yield f"{prefix} MATERIALIZE INDEX {column_name}_keys_bf"
-                    yield f"{prefix} MATERIALIZE INDEX {column_name}_values_bf"
+                    for index in self.__get_index_definitions(table, column, group_name):
+                        yield f"{prefix} MATERIALIZE INDEX {index.name}"
 
         if partitions is None:
             yield from get_statements_without_in_partition_clause()
