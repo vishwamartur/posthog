@@ -31,6 +31,15 @@ class IndexDefinition:
         return f"{self.name} {self.expression} TYPE {self.type}"
 
 
+@dataclass
+class Mutation:
+    table: TableName
+    command: str
+
+    def __str__(self) -> str:
+        return f"ALTER TABLE {self.table} {self.command}"
+
+
 class PropertyGroupManager:
     def __init__(
         self,
@@ -90,27 +99,25 @@ class PropertyGroupManager:
         for index_definition in self.__get_index_definitions(table, column, group_name):
             yield f"ALTER TABLE {table} ON CLUSTER {self.__cluster} ADD INDEX IF NOT EXISTS {index_definition}"
 
-    def get_materialize_statements(
-        self, table: TableName, partitions: Iterable[str] | None = None, on_cluster: bool | None = None
-    ) -> Iterable[str]:
-        def get_statements_without_in_partition_clause():
-            prefix = f"ALTER TABLE {table}"
-            if on_cluster is not False:  # TODO: make cluster support less messy
-                prefix = f"{prefix} ON CLUSTER {self.__cluster}"
-
-            for column, property_groups in self.__groups[table].items():
-                for group_name in property_groups.keys():
-                    column_name = self.__get_map_column_name(column, group_name)
-                    yield f"{prefix} MATERIALIZE COLUMN {column_name}"
-                    for index in self.__get_index_definitions(table, column, group_name):
-                        yield f"{prefix} MATERIALIZE INDEX {index.name}"
+    def get_materialization_mutations(
+        self, table: TableName, partitions: Iterable[str] | None = None
+    ) -> Iterable[Mutation]:
+        mutations: list[Mutation] = []
+        for column, property_groups in self.__groups[table].items():
+            for group_name in property_groups.keys():
+                column_name = self.__get_map_column_name(column, group_name)
+                mutations.append(Mutation(table, f"MATERIALIZE COLUMN {column_name}"))
+                for index in self.__get_index_definitions(table, column, group_name):
+                    mutations.append(Mutation(table, f"MATERIALIZE INDEX {index.name}"))
 
         if partitions is None:
-            yield from get_statements_without_in_partition_clause()
+            yield from mutations
         else:
-            statements = [*get_statements_without_in_partition_clause()]
             for partition in partitions:
-                yield from (f"{statement} IN PARTITION '{partition}'" for statement in statements)
+                yield from (
+                    dataclasses.replace(mutation, command=f"{mutation.command} IN PARTITION '{partition}'")
+                    for mutation in mutations
+                )
 
 
 ignore_custom_properties = [
