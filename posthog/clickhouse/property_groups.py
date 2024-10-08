@@ -104,7 +104,10 @@ class PropertyGroupManager:
     ) -> Iterable[Mutation]:
         mutations: list[Mutation] = []
         for column, property_groups in self.__groups[table].items():
-            for group_name in property_groups.keys():
+            for group_name, group_definition in property_groups.items():
+                if not group_definition.is_materialized:
+                    continue
+
                 column_name = self.__get_map_column_name(column, group_name)
                 mutations.append(Mutation(table, f"MATERIALIZE COLUMN {column_name}"))
                 for index in self.__get_index_definitions(table, column, group_name):
