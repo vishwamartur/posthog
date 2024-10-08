@@ -35,9 +35,14 @@ class IndexDefinition:
 class Mutation:
     table: TableName
     command: str
+    cluster: str | None = None
 
     def __str__(self) -> str:
-        return f"ALTER TABLE {self.table} {self.command}"
+        pieces = [f"ALTER TABLE {self.table}"]
+        if self.cluster:
+            pieces.append(f"ON CLUSTER {self.cluster}")
+        pieces.append({self.command})
+        return " ".join(pieces)
 
 
 class PropertyGroupManager:
@@ -95,9 +100,13 @@ class PropertyGroupManager:
     def get_alter_create_statements(
         self, table: TableName, column: ColumnName, group_name: PropertyGroupName
     ) -> Iterable[str]:
-        yield f"ALTER TABLE {table} ON CLUSTER {self.__cluster} ADD COLUMN IF NOT EXISTS {self.__get_column_definition(table, column, group_name)}"
+        yield Mutation(
+            table,
+            f"ADD COLUMN IF NOT EXISTS {self.__get_column_definition(table, column, group_name)}",
+            cluster=self.__cluster,
+        )
         for index_definition in self.__get_index_definitions(table, column, group_name):
-            yield f"ALTER TABLE {table} ON CLUSTER {self.__cluster} ADD INDEX IF NOT EXISTS {index_definition}"
+            yield Mutation(table, f"ADD INDEX IF NOT EXISTS {index_definition}", cluster=self.__cluster)
 
     def get_materialization_mutations(
         self, table: TableName, partitions: Iterable[str] | None = None
