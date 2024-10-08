@@ -3,6 +3,7 @@ import structlog
 from django.core.management.base import BaseCommand
 from posthog.clickhouse.property_groups import property_groups
 from posthog.clickhouse.client.connection import ch_pool, make_ch_pool
+from posthog.settings import CLICKHOUSE_CLUSTER
 
 
 logger = structlog.get_logger(__name__)
@@ -20,7 +21,7 @@ def get_pools_for_shards():
             ORDER BY shard_num, replica_num
             LIMIT 1 by shard_num
         """,
-            {"cluster": "posthog"},
+            {"cluster": CLICKHOUSE_CLUSTER},
         )
 
         for shard_num, host_address in rows:
