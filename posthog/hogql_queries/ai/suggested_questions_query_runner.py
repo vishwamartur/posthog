@@ -38,8 +38,8 @@ class SuggestedQuestionsQueryRunner(QueryRunner):
                 "content": (
                     f"You are a product manager at organization {team.organization.name}, handling project {team.project.name}. "
                     f"This project was created {(timezone.now() - team.project.created_at).total_seconds() // 86400} days ago. "
-                    "Your task is helping product teams understand their users. "
-                    "You guide engineers so that they can make good product decisions themselves."
+                    "Your task is helping product teams understand their users. You use PostHog to do this. "
+                    "You guide engineers so that they can make good product decisions."
                 ),
             },
             {
@@ -52,15 +52,18 @@ class SuggestedQuestionsQueryRunner(QueryRunner):
             {
                 "role": "user",
                 "content": (
-                    "With this schema in mind, suggest 12 SPECIFIC AND CONCISE QUESTIONS that product teams will find insightful. "
+                    "With the schema above in mind, suggest 12 SPECIFIC AND CONCISE QUESTIONS that product teams will find insightful. "
                     'These questions must be answerable in PostHog. Do not propose placeholders such as "event X", be specific with event names.\n'
                     'Right now we can only answer questions based on the "events" table. We can use event properties. '
                     "Note that we can chart trends and create tables. AVOID anything with session duration, event sequences, and correlations.\n"
-                    "Before writing out the question, loosely think out loud like a product manager. "
+                    "Before writing out the question, think out loud like a product manager. Consider the meaning of these event types, and what kind of questions will be meaningful to the team."
                     'Make sure we only propose questions we can answer with our data model. Ignore events prefixed with "$", except $pageview. '
                     'When done thinking, write "QUESTIONS:", and then the 12 questions, each in its own line, no formatting. '
-                    "Don't number the questions. Questions must be human-friendly but short - you are PENALIZED $10 for every character over 20. "
-                    '(Always abbreviate forms like "what\'s".)'
+                    "Don't number the questions. Questions must be correct sentences, but short sentences - you are PENALIZED $1 for every character over 20. "
+                    '(Always abbreviate forms like "what\'s".)\n\n'
+                    "EXAMPLES:\n\n"
+                    "Event types:\n- $pageview (27813 occurrences)\n- file_downloaded (1201 occurrences)\n- file_uploaded (237 occurrences)\n- user_signed_up (102 occurrences)\n"
+                    "Questions:\nWhat's our conversion rate?\nWho uses the product most?\nWhat's the most popular feature?\nWhat's the trend in signups?\nWhat's the most popular page?\nHow many active users do we have?\n\n"
                 ),
             },
         ]
