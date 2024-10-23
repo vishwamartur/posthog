@@ -2,6 +2,7 @@ import { IconHome } from '@posthog/icons'
 import clsx from 'clsx'
 import { useActions, useValues } from 'kea'
 import { addToDashboardModalLogic } from 'lib/components/AddToDashboard/addToDashboardModalLogic'
+import { DashboardPrivilegeLevel } from 'lib/constants'
 import { LemonButton } from 'lib/lemon-ui/LemonButton'
 import { LemonInput } from 'lib/lemon-ui/LemonInput/LemonInput'
 import { LemonModal } from 'lib/lemon-ui/LemonModal'
@@ -19,7 +20,6 @@ import { DashboardBasicType, InsightLogicProps } from '~/types'
 interface DashboardRelationRowProps {
     dashboard: DashboardBasicType
     insightProps: InsightLogicProps
-    canEditInsight: boolean
     isHighlighted: boolean
     isAlreadyOnDashboard: boolean
     style: CSSProperties
@@ -31,7 +31,6 @@ const DashboardRelationRow = ({
     isAlreadyOnDashboard,
     dashboard,
     insightProps,
-    canEditInsight,
 }: DashboardRelationRowProps): JSX.Element => {
     const { addToDashboard, removeFromDashboard } = useActions(addToDashboardModalLogic(insightProps))
     const { dashboardWithActiveAPICall } = useValues(addToDashboardModalLogic(insightProps))
@@ -65,7 +64,7 @@ const DashboardRelationRow = ({
                 status={isAlreadyOnDashboard ? 'danger' : 'default'}
                 loading={dashboardWithActiveAPICall === dashboard.id}
                 disabledReason={
-                    !canEditInsight
+                    dashboard.effective_privilege_level < DashboardPrivilegeLevel.CanEdit
                         ? "You don't have permission to edit this dashboard"
                         : dashboardWithActiveAPICall
                         ? 'Loading...'
@@ -87,15 +86,9 @@ interface SaveToDashboardModalProps {
     isOpen: boolean
     closeModal: () => void
     insightProps: InsightLogicProps
-    canEditInsight: boolean
 }
 
-export function AddToDashboardModal({
-    isOpen,
-    closeModal,
-    insightProps,
-    canEditInsight,
-}: SaveToDashboardModalProps): JSX.Element {
+export function AddToDashboardModal({ isOpen, closeModal, insightProps }: SaveToDashboardModalProps): JSX.Element {
     const logic = addToDashboardModalLogic(insightProps)
 
     const { searchQuery, currentDashboards, orderedDashboards, scrollIndex } = useValues(logic)
@@ -107,7 +100,6 @@ export function AddToDashboardModal({
                 key={rowIndex}
                 dashboard={orderedDashboards[rowIndex]}
                 insightProps={insightProps}
-                canEditInsight={canEditInsight}
                 isHighlighted={rowIndex === scrollIndex}
                 isAlreadyOnDashboard={currentDashboards.some(
                     (currentDashboard) => currentDashboard.id === orderedDashboards[rowIndex].id
@@ -128,15 +120,7 @@ export function AddToDashboardModal({
             footer={
                 <>
                     <div className="flex-1">
-                        <LemonButton
-                            type="secondary"
-                            onClick={addNewDashboard}
-                            disabledReason={
-                                !canEditInsight
-                                    ? 'You do not have permission to add this insight to dashboards'
-                                    : undefined
-                            }
-                        >
+                        <LemonButton type="secondary" onClick={addNewDashboard}>
                             Add to a new dashboard
                         </LemonButton>
                     </div>

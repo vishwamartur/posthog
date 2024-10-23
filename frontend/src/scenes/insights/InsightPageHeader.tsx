@@ -113,7 +113,6 @@ export function InsightPageHeader({ insightLogicProps }: { insightLogicProps: In
                         isOpen={addToDashboardModalOpen}
                         closeModal={() => setAddToDashboardModalOpenModal(false)}
                         insightProps={insightProps}
-                        canEditInsight={canEditInsight}
                     />
                     {insightMode === ItemMode.Alerts && (
                         <ManageAlertsModal
