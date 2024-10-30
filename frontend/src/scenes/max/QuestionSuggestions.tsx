@@ -1,5 +1,6 @@
 import { IconArrowUpRight, IconShuffle } from '@posthog/icons'
 import { LemonButton, LemonSkeleton } from '@posthog/lemon-ui'
+import clsx from 'clsx'
 import { useActions, useValues } from 'kea'
 import { useEffect } from 'react'
 
@@ -16,7 +17,12 @@ export function QuestionSuggestions(): JSX.Element {
     }, [wasSuggestionLoadingInitiated, loadSuggestions])
 
     return (
-        <div className="flex items-center justify-center gap-2 min-w-full">
+        <div
+            className={clsx(
+                'flex items-center justify-center flex-wrap gap-x-2 gap-y-1.5',
+                allSuggestionsLoading && !visibleSuggestions ? 'w-[min(48rem,100%)]' : 'w-full'
+            )}
+        >
             {
                 visibleSuggestions ? (
                     <>
@@ -47,7 +53,7 @@ export function QuestionSuggestions(): JSX.Element {
                             type="secondary"
                             disabled
                             style={{
-                                flexGrow: [2, 1.5, 3, 1][index],
+                                flexGrow: [2.5, 2, 3, 1.5][index],
                             }}
                         >
                             <LemonSkeleton className="h-3 w-full" />
