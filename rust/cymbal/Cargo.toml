@@ -25,6 +25,7 @@ sourcemap = "9.0.0"
 reqwest = { workspace = true }
 aws-config = { workspace = true }
 aws-sdk-s3 = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 httpmock = { workspace = true }
